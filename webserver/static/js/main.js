@@ -1,22 +1,29 @@
-var aliveSecond = 0;
-var heartbeatRate = 5000;
+let aliveSecond = 0;
+let heartbeatRate = 1000;
 
 function keepAlive()
 {
-	var request = new XMLHttpRequest();
-	request.onreadystatechange = function(){
-		if(this.readyState === 4){
-			if(this.status === 200){
-				if(this.responseText !== null){
-					var date = new Date();
-					aliveSecond = date.getTime();
-					var keepAliveData = this.responseText;
-				}
-			}
+	fetch('/keep_alive')
+	.then(response=>{
+		if(response.ok){
+			let date = new Date();
+			aliveSecond = date.getTime();
+			return response.json();
 		}
-	};
-	request.open("GET", "keep_alive", true);
-	request.send(null);
+		throw new Error("Server offline")
+	})
+	.then(responseJson => {
+		if(responseJson.motion == 1){
+			document.getElementById("motion_id").innerHTML = "Motion Detected";
+		}
+		else
+		{
+
+			document.getElementById("motion_id").innerHTML = "No Motion Detected";
+		}
+		
+		console.log(responseJson)})
+	.catch(error => console.log(error));
 	setTimeout('keepAlive()', heartbeatRate);
 }
 
@@ -38,3 +45,18 @@ function time()
 	setTimeout('time()', 1000);
 }
 
+function handleClick(cb){
+	if(cb.checked){
+		value = "ON";
+	}else{
+		value = "OFF";
+	}
+	sendEvent(cb.id+"-"+value);
+}
+
+function sendEvent(value){
+	fetch("/status="+value,
+		{
+			method:"POST"
+		})
+}
